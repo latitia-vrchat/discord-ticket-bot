@@ -50,9 +50,9 @@ Hello! Thank you for reaching out.
 
 **Current status**: {status_message}
 
-I will respond to your inquiry as soon as I'm available. {next_available}
+Latitia will respond to your inquiry as soon as I'm available. {next_available}
 
-**Note**: If I don't respond during working hours, I might be working overtime at my day job.
+**Note**: If She don't respond during working hours, She might be working overtime at her main job.
 
 Thank you for your patience! 🙏
 """
@@ -407,4 +407,5 @@ if __name__ == '__main__':
         print('✅ Token 已載入')
         print(f'✅ Token 長度：{len(TOKEN)} 字元')
         bot.run(TOKEN)
+
 
