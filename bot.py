@@ -452,15 +452,18 @@ async def help_command(ctx):
 
 # ===== 啟動機器人 =====
 if __name__ == '__main__':
-    import config
+    import os
     
     print('🚀 正在啟動機器人...')
     
-    TOKEN = config.DISCORD_TOKEN
+    # 直接從環境變數讀取 TOKEN
+    TOKEN = os.environ.get('DISCORD_TOKEN')
     
     if not TOKEN:
         print('❌ 錯誤：找不到 DISCORD_TOKEN 環境變數')
         print('請在 Render 控制台設定 DISCORD_TOKEN')
+        exit(1)
     else:
         print('✅ Token 已載入')
+        print(f'✅ Token 長度：{len(TOKEN)} 字元')
         bot.run(TOKEN)
