@@ -14,98 +14,33 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 # 你的時區（台灣時間）
 TIMEZONE = pytz.timezone('Asia/Taipei')
 
-# 工作日設定（每天都工作）
-WORKING_DAYS = [0, 1, 2, 3, 4, 5, 6]  # 每天
+# 工作日設定（0=週一, 1=週二, 2=週三, 3=週四, 4=週五, 5=週六, 6=週日）
+WORKING_DAYS = [0, 1, 2, 3, 4, 5, 6]  # 週一、週五、週六、週日
 
-# 工作時間設定（清醒時間）
-WORK_START = time(8, 0)   # 早上08:00起床
-WORK_END = time(21, 0)    # 晚上21:00睡覺
+# 工作時間設定（24小時制）
+WORK_START = time(21, 0)  # 晚上21:00開始工作
+WORK_END = time(8, 0)    # 早上8:00結束工作
 
 # ===== 監控設定 =====
-# 監控指定的類別 ID
-MONITORED_CATEGORIES_IDS = [
-    1077145389968404530,           # 票券
-    1280863651271802933,           # 上傳協助票券
-    1333666242061664276,           # 僅上傳模型票券
-]
-
-# 監控指定的頻道 ID
-MONITORED_CHANNELS_IDS = [
-    822211672840208395,           # ɢᴇnᴇʀᴀʟ
-]
-
-# 監控指定的論壇 ID
-MONITORED_FORUM_IDS = [
-    1236304882470752357           # 幫助
-]
-
-# 監控指定的類別（備用）
+# 監控指定的類別名稱（Category）
 MONITORED_CATEGORIES = [
-    # 類別名稱
+    'Tɪcket',           # 範例：票券類別
+    'Upload Channel',              # 範例：客服類別
+    'UPLOAD ONLY AVATAR',               # 範例：中文類別
+    # 在這裡添加你要監控的類別名稱
 ]
 
-# 監控指定的頻道（備用）
-MONITORED_CHANNELS = [
-    '-',               # 票券
+# 監控指定的頻道名稱或ID
+MONITORED_CHANNELS_IDS = [
+    822211672840208395,    # 或者直接使用頻道ID（取消註解並填入實際ID）
 ]
 
-# 監控指定的論壇（備用）
+# 監控特定 Forum 名稱
 MONITORED_FORUM_NAMES = [
-    # Forum 名稱
+    'ʜᴇʟᴘ'
+    # 在這裡添加你要監控的 Forum 名稱
 ]
 
-MONITOR_FORUMS = True  # 監控所有 Forum
-
-def should_monitor_channel(channel):
-    """判斷是否應該監控此頻道"""
-    
-    # 檢查頻道 ID（精確匹配）
-    if channel.id in MONITORED_CHANNEL_IDS:
-        return True
-    
-    # 檢查 Forum ID
-    if isinstance(channel, discord.ForumChannel):
-        if channel.id in MONITORED_FORUM_IDS:
-            return True
-        if MONITOR_FORUMS:
-            if not MONITORED_FORUM_NAMES:
-                return True
-            return any(forum_name.lower() in channel.name.lower() for forum_name in MONITORED_FORUM_NAMES)
-        return False
-    
-    # 檢查 Thread（Forum 中的討論串）
-    if isinstance(channel, discord.Thread):
-        if channel.parent:
-            # 如果父頻道是 Forum
-            if isinstance(channel.parent, discord.ForumChannel):
-                if channel.parent.id in MONITORED_FORUM_IDS:
-                    return True
-                if MONITOR_FORUMS:
-                    if not MONITORED_FORUM_NAMES:
-                        return True
-                    return any(forum_name.lower() in channel.parent.name.lower() for forum_name in MONITORED_FORUM_NAMES)
-            # 遞迴檢查父頻道
-            return should_monitor_channel(channel.parent)
-        return False
-    
-    # 檢查類別 ID
-    if hasattr(channel, 'category') and channel.category:
-        if channel.category.id in MONITORED_CATEGORY_IDS:
-            return True
-    
-    # 檢查頻道名稱（包含關鍵字）
-    channel_name_lower = channel.name.lower()
-    if any(isinstance(ch, str) and ch.lower() in channel_name_lower for ch in MONITORED_CHANNELS):
-        return True
-    
-    # 檢查類別名稱
-    if hasattr(channel, 'category') and channel.category:
-        category_name = channel.category.name
-        if any(cat.lower() in category_name.lower() for cat in MONITORED_CATEGORIES):
-            return True
-    
-    return False
-    
 # 自動回覆訊息
 AUTO_REPLY_MESSAGE = """
 🌙 **Latitia is currently unavailable**
@@ -529,4 +464,3 @@ if __name__ == '__main__':
         print('✅ Token 已載入')
         print(f'✅ Token 長度：{len(TOKEN)} 字元')
         bot.run(TOKEN)
-
