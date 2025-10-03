@@ -31,8 +31,8 @@ MONITORED_CATEGORIES = [
 ]
 
 # 監控指定的頻道名稱或ID
-MONITORED_CHANNELS_IDS = [
-    822211672840208395,    # 或者直接使用頻道ID（取消註解並填入實際ID）
+MONITORED_CHANNELS = [
+    'ɢᴇnᴇʀᴀʟ',    # 或者直接使用頻道ID（取消註解並填入實際ID）
 ]
 
 # 監控特定 Forum 名稱
@@ -464,3 +464,4 @@ if __name__ == '__main__':
         print('✅ Token 已載入')
         print(f'✅ Token 長度：{len(TOKEN)} 字元')
         bot.run(TOKEN)
+
