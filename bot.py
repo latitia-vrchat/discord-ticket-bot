@@ -19,7 +19,7 @@ SLEEP_START = time(21, 0)  # 晚上21:00開始睡覺
 SLEEP_END = time(8, 0)     # 早上08:00起床
 
 # ===== 監控設定 =====
-# 監控的類別名稱（只需填入類別名稱即可）
+# 監控的類別名稱
 MONITORED_CATEGORIES = [
     'Tɪcket',
     'Upload Channel',
@@ -28,22 +28,22 @@ MONITORED_CATEGORIES = [
 
 # 監控的頻道名稱關鍵字
 MONITORED_CHANNELS = [
-    'ɢᴇnᴇʀᴀʟ',
+    'GENERAL',
     'ticket',
 ]
 
 # 監控的 Forum 名稱
 MONITORED_FORUM_NAMES = [
-    'ʜᴇʟᴘ',
+    'HELP',
 ]
 
-# 自動回覆訊息
+# 自動回覆訊息（完全按照你的內容）
 AUTO_REPLY_MESSAGE = """
 🌙 **Latitia is currently unavailable**
 
 Hello! Thank you for reaching out.
 
-⏰ **Current time**: {current_time} (GMT+8)
+⏰ **Current time**: {current_time} (UTC+8)
 🕐 **Working hours**: <t:1759449600:t> - <t:1759485600:t>
 😴 **Break Time**：Daily <t:1759496400:t> - <t:1759449600:t>
 ✅ **Ticket Response Time**：<t:1759464000:t> - <t:1759496400:t>
