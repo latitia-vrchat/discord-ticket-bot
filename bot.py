@@ -29,7 +29,7 @@ MONITORED_CATEGORIES = [
 # 監控的頻道名稱關鍵字
 MONITORED_CHANNELS = [
     'GENERAL',
-    'ticket',
+    '-',
 ]
 
 # 監控的 Forum 名稱
@@ -407,3 +407,4 @@ if __name__ == '__main__':
         print('✅ Token 已載入')
         print(f'✅ Token 長度：{len(TOKEN)} 字元')
         bot.run(TOKEN)
+
