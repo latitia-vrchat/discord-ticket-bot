@@ -14,34 +14,28 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 # 你的時區（台灣時間）
 TIMEZONE = pytz.timezone('Asia/Taipei')
 
-# 工作日設定（0=週一, 1=週二, 2=週三, 3=週四, 4=週五, 5=週六, 6=週日）
-WORKING_DAYS = [0, 1, 2, 3, 4, 5, 6]  # 週一、週五、週六、週日
-
-# 工作時間設定（24小時制）
-WORK_START = time(21, 0)  # 晚上21:00開始工作
-WORK_END = time(8, 0)    # 早上8:00結束工作
+# 睡覺時間設定（24小時制）
+SLEEP_START = time(21, 0)  # 晚上21:00開始睡覺
+SLEEP_END = time(8, 0)     # 早上08:00起床
 
 # ===== 監控設定 =====
-# 監控指定的類別名稱（Category）
+# 監控的類別名稱（只需填入類別名稱即可）
 MONITORED_CATEGORIES = [
-    'Tɪcket',           # 範例：票券類別
-    'Upload Channel',              # 範例：客服類別
-    'UPLOAD ONLY AVATAR',               # 範例：中文類別
-    # 在這裡添加你要監控的類別名稱
+    'Tɪcket',
+    'Upload Channel',
+    'UPLOAD ONLY AVATAR',
 ]
 
-# 監控指定的頻道名稱或ID
+# 監控的頻道名稱關鍵字
 MONITORED_CHANNELS = [
-    'ɢᴇnᴇʀᴀʟ',    # 或者直接使用頻道ID（取消註解並填入實際ID）
+    'ɢᴇnᴇʀᴀʟ',
+    'ticket',
 ]
 
-# 監控特定 Forum 名稱
+# 監控的 Forum 名稱
 MONITORED_FORUM_NAMES = [
-    'ʜᴇʟᴘ'
-    # 在這裡添加你要監控的 Forum 名稱
+    'ʜᴇʟᴘ',
 ]
-
-MONITOR_FORUMS = True  # 監控 Forum
 
 # 自動回覆訊息
 AUTO_REPLY_MESSAGE = """
@@ -49,7 +43,7 @@ AUTO_REPLY_MESSAGE = """
 
 Hello! Thank you for reaching out.
 
-⏰ **Current time**: {current_time} (UTC+8)
+⏰ **Current time**: {current_time} (GMT+8)
 🕐 **Working hours**: <t:1759449600:t> - <t:1759485600:t>
 😴 **Break Time**：Daily <t:1759496400:t> - <t:1759449600:t>
 ✅ **Ticket Response Time**：<t:1759464000:t> - <t:1759496400:t>
@@ -63,101 +57,73 @@ I will respond to your inquiry as soon as I'm available. {next_available}
 Thank you for your patience! 🙏
 """
 
-# 已回覆的頻道記錄（避免重複回覆）
+# 已回覆的頻道記錄
 replied_channels = set()
 
 # ===== 功能函數 =====
 
-def is_working_time():
-    """檢查當前是否在工作時間內"""
-    now = datetime.now(TIMEZONE)
-    current_day = now.weekday()
-    current_time = now.time()
+def is_sleep_time():
+    """檢查當前是否在睡覺時間"""
+    now = datetime.now(TIMEZONE).time()
     
-    if current_day not in WORKING_DAYS:
-        return False
-    
-    return WORK_START <= current_time <= WORK_END
+    if SLEEP_START < SLEEP_END:
+        return now < SLEEP_START or now >= SLEEP_END
+    else:
+        return now >= SLEEP_START or now < SLEEP_END
 
 def get_status_message():
     """獲取當前狀態訊息"""
     now = datetime.now(TIMEZONE)
-    current_day = now.weekday()
-    day_names = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-    
-    if current_day not in WORKING_DAYS:
-        return f"It's {day_names[current_day]}, which is my day off"
-    else:
-        current_time = now.time()
-        if current_time < WORK_START:
-            return f"It's before my working hours (starts at {WORK_START.strftime('%H:%M')})"
-        elif current_time > WORK_END:
-            return f"It's after my working hours (ends at {WORK_END.strftime('%H:%M')})"
-        else:
-            return "I'm currently working on other tasks or may be working overtime at my day job"
-
-def get_next_available_time():
-    """獲取下次可用時間"""
-    now = datetime.now(TIMEZONE)
-    current_day = now.weekday()
     current_time = now.time()
     
-    if current_day in WORKING_DAYS and current_time < WORK_START:
-        return f"Expected response after **{WORK_START.strftime('%H:%M')} today**."
-    
-    days_until_next_work = None
-    for i in range(1, 8):
-        next_day = (current_day + i) % 7
-        if next_day in WORKING_DAYS:
-            days_until_next_work = i
-            break
-    
-    if days_until_next_work == 1:
-        return f"Expected response after **{WORK_START.strftime('%H:%M')} tomorrow**."
+    if current_time >= SLEEP_START or current_time < SLEEP_END:
+        return f"I'm currently sleeping (Sleep time: {SLEEP_START.strftime('%H:%M')} - {SLEEP_END.strftime('%H:%M')})"
     else:
-        day_names = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-        next_work_day = day_names[(current_day + days_until_next_work) % 7]
-        return f"Expected response after **{WORK_START.strftime('%H:%M')} on {next_work_day}**."
+        return "I'm currently available but might be busy with other tasks"
+
+def get_next_available_time():
+    """獲取下次上線時間"""
+    now = datetime.now(TIMEZONE)
+    wake_datetime = now.replace(hour=SLEEP_END.hour, minute=SLEEP_END.minute, second=0, microsecond=0)
+    
+    if now.time() >= SLEEP_END and now.time() < SLEEP_START:
+        return "I'm currently available!"
+    
+    if now.time() >= SLEEP_END:
+        from datetime import timedelta
+        wake_datetime += timedelta(days=1)
+    
+    return f"Expected response after **{wake_datetime.strftime('%m/%d %H:%M')}**."
 
 def should_monitor_channel(channel):
     """判斷是否應該監控此頻道"""
-    # 檢查是否為 Forum 頻道
+    # 檢查 Forum
     if isinstance(channel, discord.ForumChannel):
-        if MONITOR_FORUMS:
-            # 如果設定監控所有 Forum，則檢查名稱
-            if not MONITORED_FORUM_NAMES:
-                return True
+        if MONITORED_FORUM_NAMES:
             return any(forum_name.lower() in channel.name.lower() for forum_name in MONITORED_FORUM_NAMES)
         return False
     
-    # 檢查是否為 Thread（Forum 中的討論串或一般討論串）
+    # 檢查 Thread
     if isinstance(channel, discord.Thread):
-        # 如果是 Forum 中的討論串
-        if channel.parent and isinstance(channel.parent, discord.ForumChannel):
-            if MONITOR_FORUMS:
-                if not MONITORED_FORUM_NAMES:
-                    return True
-                return any(forum_name.lower() in channel.parent.name.lower() for forum_name in MONITORED_FORUM_NAMES)
-        
-        # 如果是一般討論串，檢查其父頻道
         if channel.parent:
+            if isinstance(channel.parent, discord.ForumChannel):
+                if MONITORED_FORUM_NAMES:
+                    return any(forum_name.lower() in channel.parent.name.lower() for forum_name in MONITORED_FORUM_NAMES)
             return should_monitor_channel(channel.parent)
         return False
     
-    # 檢查頻道ID（精確匹配）
-    if any(isinstance(ch, int) and ch == channel.id for ch in MONITORED_CHANNELS):
-        return True
-    
-    # 檢查頻道名稱（包含關鍵字）
+    # 檢查頻道名稱
     channel_name_lower = channel.name.lower()
-    if any(isinstance(ch, str) and ch.lower() in channel_name_lower for ch in MONITORED_CHANNELS):
-        return True
+    if MONITORED_CHANNELS:
+        if any(keyword.lower() in channel_name_lower for keyword in MONITORED_CHANNELS):
+            return True
     
-    # 檢查類別（Category）
+    # 檢查類別
     if hasattr(channel, 'category') and channel.category:
         category_name = channel.category.name
-        if any(cat.lower() in category_name.lower() for cat in MONITORED_CATEGORIES):
-            return True
+        if MONITORED_CATEGORIES:
+            if any(cat.lower() in category_name.lower() for cat in MONITORED_CATEGORIES):
+                return True
     
     return False
 
@@ -169,43 +135,36 @@ async def on_ready():
     print(f'✅ 機器人已上線：{bot.user.name}')
     print(f'📋 機器人 ID：{bot.user.id}')
     print(f'⏰ 當前時區：{TIMEZONE}')
-    print(f'📅 工作日：週二、週三、週四')
-    print(f'🕐 工作時間：{WORK_START.strftime("%H:%M")} - {WORK_END.strftime("%H:%M")}')
-    print(f'💼 當前狀態：{"✅ 工作中" if is_working_time() else "😴 休息中"}')
+    print(f'😴 睡覺時間：{SLEEP_START.strftime("%H:%M")} - {SLEEP_END.strftime("%H:%M")}')
+    print(f'💼 當前狀態：{"😴 睡覺中" if is_sleep_time() else "✅ 清醒中"}')
     print('\n🔍 監控設定：')
     print(f'  📁 監控類別：{MONITORED_CATEGORIES if MONITORED_CATEGORIES else "無"}')
     print(f'  💬 監控頻道：{MONITORED_CHANNELS if MONITORED_CHANNELS else "無"}')
-    print(f'  📋 監控 Forum：{"是" if MONITOR_FORUMS else "否"}')
-    if MONITORED_FORUM_NAMES:
-        print(f'  📋 指定 Forum：{MONITORED_FORUM_NAMES}')
+    print(f'  📋 監控 Forum：{MONITORED_FORUM_NAMES if MONITORED_FORUM_NAMES else "無"}')
     print('=' * 50)
 
 @bot.event
 async def on_message(message):
     """當有新訊息時觸發"""
-    # 忽略機器人自己的訊息
     if message.author.bot:
         await bot.process_commands(message)
         return
     
-    # 檢查是否應該監控此頻道
     channel = message.channel
+    
     if not should_monitor_channel(channel):
         await bot.process_commands(message)
         return
     
-    # 檢查是否已回覆過這個頻道
     if channel.id in replied_channels:
         await bot.process_commands(message)
         return
     
-    # 檢查是否在工作時間（如果在工作時間，不回覆）
-    if is_working_time():
-        print(f'⏰ 當前是工作時間，不發送自動回覆：{channel.name}')
+    if not is_sleep_time():
+        print(f'⏰ 當前不是睡覺時間，不發送自動回覆：{channel.name}')
         await bot.process_commands(message)
         return
     
-    # 發送自動回覆
     try:
         current_time = datetime.now(TIMEZONE).strftime('%Y-%m-%d %H:%M')
         status_msg = get_status_message()
@@ -220,7 +179,6 @@ async def on_message(message):
         await channel.send(reply_message)
         replied_channels.add(channel.id)
         
-        # 顯示頻道類型
         channel_type = "Forum Thread" if isinstance(channel, discord.Thread) and isinstance(channel.parent, discord.ForumChannel) else \
                        "Thread" if isinstance(channel, discord.Thread) else \
                        "Forum" if isinstance(channel, discord.ForumChannel) else "Channel"
@@ -241,8 +199,7 @@ async def on_message(message):
 
 @bot.event
 async def on_thread_create(thread):
-    """當 Forum 中創建新討論串時（額外保險，確保捕捉到）"""
-    # 如果是 Forum Thread，等待一下讓第一條訊息出現
+    """當 Forum 中創建新討論串時"""
     if isinstance(thread.parent, discord.ForumChannel):
         print(f'🆕 偵測到新 Forum Thread：{thread.name}')
 
@@ -252,42 +209,41 @@ async def on_thread_create(thread):
 async def check_status(ctx):
     """檢查機器人狀態"""
     now = datetime.now(TIMEZONE)
-    is_working = is_working_time()
+    is_sleeping = is_sleep_time()
     
     embed = discord.Embed(
         title="🤖 機器人狀態",
-        color=discord.Color.green() if is_working else discord.Color.orange(),
+        color=discord.Color.orange() if is_sleeping else discord.Color.green(),
         timestamp=now
     )
     
     embed.add_field(
         name="📅 當前時間", 
-        value=now.strftime('%Y-%m-%d %H:%M:%S (%A)'), 
+        value=now.strftime('%Y-%m-%d %H:%M:%S'), 
         inline=False
     )
     
     embed.add_field(
-        name="🕐 工作時間", 
-        value=f"週二、週三、週四\n{WORK_START.strftime('%H:%M')} - {WORK_END.strftime('%H:%M')}", 
+        name="😴 睡覺時間", 
+        value=f"每天 {SLEEP_START.strftime('%H:%M')} - {SLEEP_END.strftime('%H:%M')}", 
         inline=False
     )
     
-    status_emoji = "✅" if is_working else "😴"
-    status_text = "工作中（不會自動回覆）" if is_working else "休息中（會自動回覆）"
+    status_emoji = "😴" if is_sleeping else "✅"
+    status_text = "睡覺中（會自動回覆）" if is_sleeping else "清醒中（不會自動回覆）"
     embed.add_field(
         name="💼 當前狀態", 
         value=f"{status_emoji} {status_text}", 
         inline=False
     )
     
-    # 監控設定
     monitoring_info = []
     if MONITORED_CATEGORIES:
         monitoring_info.append(f"📁 類別：{len(MONITORED_CATEGORIES)} 個")
     if MONITORED_CHANNELS:
         monitoring_info.append(f"💬 頻道：{len(MONITORED_CHANNELS)} 個")
-    if MONITOR_FORUMS:
-        monitoring_info.append(f"📋 Forum：啟用")
+    if MONITORED_FORUM_NAMES:
+        monitoring_info.append(f"📋 Forum：{len(MONITORED_FORUM_NAMES)} 個")
     
     if monitoring_info:
         embed.add_field(
@@ -302,14 +258,6 @@ async def check_status(ctx):
         inline=False
     )
     
-    if not is_working:
-        next_available = get_next_available_time()
-        embed.add_field(
-            name="⏰ 下次工作時間", 
-            value=next_available, 
-            inline=False
-        )
-    
     await ctx.send(embed=embed)
 
 @bot.command(name='check')
@@ -323,7 +271,6 @@ async def check_channel(ctx):
         color=discord.Color.green() if is_monitored else discord.Color.red()
     )
     
-    # 頻道資訊
     channel_type = "Forum Thread" if isinstance(channel, discord.Thread) and isinstance(channel.parent, discord.ForumChannel) else \
                    "Thread" if isinstance(channel, discord.Thread) else \
                    "Forum" if isinstance(channel, discord.ForumChannel) else \
@@ -341,14 +288,12 @@ async def check_channel(ctx):
         else:
             embed.add_field(name="父頻道", value=channel.parent.name, inline=False)
     
-    # 監控狀態
     embed.add_field(
         name="監控狀態",
         value=f"{'✅ 會被監控' if is_monitored else '❌ 不會被監控'}",
         inline=False
     )
     
-    # 已回覆狀態
     if channel.id in replied_channels:
         embed.add_field(
             name="回覆狀態",
@@ -361,7 +306,7 @@ async def check_channel(ctx):
 @bot.command(name='list')
 @commands.has_permissions(administrator=True)
 async def list_monitored(ctx):
-    """列出所有監控設定（僅管理員可用）"""
+    """列出所有監控設定"""
     embed = discord.Embed(
         title="📋 監控設定清單",
         color=discord.Color.blue()
@@ -375,19 +320,16 @@ async def list_monitored(ctx):
         channels_text = "\n".join([f"• {ch}" for ch in MONITORED_CHANNELS])
         embed.add_field(name="💬 監控的頻道", value=channels_text, inline=False)
     
-    forum_status = "✅ 啟用" if MONITOR_FORUMS else "❌ 停用"
-    embed.add_field(name="📋 Forum 監控", value=forum_status, inline=False)
-    
     if MONITORED_FORUM_NAMES:
         forums_text = "\n".join([f"• {forum}" for forum in MONITORED_FORUM_NAMES])
-        embed.add_field(name="📋 指定的 Forum", value=forums_text, inline=False)
+        embed.add_field(name="📋 監控的 Forum", value=forums_text, inline=False)
     
     await ctx.send(embed=embed)
 
 @bot.command(name='clear')
 @commands.has_permissions(administrator=True)
 async def clear_replied(ctx):
-    """清除已回覆的頻道記錄（僅管理員可用）"""
+    """清除已回覆的頻道記錄"""
     count = len(replied_channels)
     replied_channels.clear()
     await ctx.send(f'✅ 已清除 {count} 個頻道的回覆記錄')
@@ -395,7 +337,7 @@ async def clear_replied(ctx):
 @bot.command(name='test')
 @commands.has_permissions(administrator=True)
 async def test_reply(ctx):
-    """在當前頻道測試自動回覆訊息（僅管理員可用）"""
+    """測試自動回覆訊息"""
     current_time = datetime.now(TIMEZONE).strftime('%Y-%m-%d %H:%M')
     status_msg = get_status_message()
     next_available = get_next_available_time()
@@ -412,22 +354,22 @@ async def test_reply(ctx):
 @bot.command(name='add')
 @commands.has_permissions(administrator=True)
 async def add_channel_to_replied(ctx):
-    """將當前頻道加入已回覆清單（僅管理員可用）"""
+    """將當前頻道加入已回覆清單"""
     if ctx.channel.id in replied_channels:
         await ctx.send('⚠️ 此頻道已經在已回覆清單中')
     else:
         replied_channels.add(ctx.channel.id)
-        await ctx.send('✅ 已將此頻道加入已回覆清單，機器人不會再次自動回覆')
+        await ctx.send('✅ 已將此頻道加入已回覆清單')
 
 @bot.command(name='remove')
 @commands.has_permissions(administrator=True)
 async def remove_channel_from_replied(ctx):
-    """將當前頻道從已回覆清單移除（僅管理員可用）"""
+    """將當前頻道從已回覆清單移除"""
     if ctx.channel.id not in replied_channels:
         await ctx.send('⚠️ 此頻道不在已回覆清單中')
     else:
         replied_channels.remove(ctx.channel.id)
-        await ctx.send('✅ 已將此頻道從已回覆清單移除，機器人可以再次自動回覆')
+        await ctx.send('✅ 已將此頻道從已回覆清單移除')
 
 @bot.command(name='help_bot')
 async def help_command(ctx):
@@ -455,7 +397,6 @@ if __name__ == '__main__':
     
     print('🚀 正在啟動機器人...')
     
-    # 直接從環境變數讀取 TOKEN
     TOKEN = os.environ.get('DISCORD_TOKEN')
     
     if not TOKEN:
@@ -466,5 +407,3 @@ if __name__ == '__main__':
         print('✅ Token 已載入')
         print(f'✅ Token 長度：{len(TOKEN)} 字元')
         bot.run(TOKEN)
-
-
