@@ -41,6 +41,8 @@ MONITORED_FORUM_NAMES = [
     # 在這裡添加你要監控的 Forum 名稱
 ]
 
+MONITOR_FORUMS = True  # 監控 Forum
+
 # 自動回覆訊息
 AUTO_REPLY_MESSAGE = """
 🌙 **Latitia is currently unavailable**
@@ -464,4 +466,5 @@ if __name__ == '__main__':
         print('✅ Token 已載入')
         print(f'✅ Token 長度：{len(TOKEN)} 字元')
         bot.run(TOKEN)
+
 
