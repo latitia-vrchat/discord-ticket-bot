@@ -1,2 +1,2 @@
-# Latitia-ticket-bot
+# discord-ticket-bot
 Discord ticket auto-reply bot
